@@ -22,18 +22,6 @@ down:
 	docker-compose down
 	@echo "Done!"
 
-## build_broker: builds the broker binary as a linux executable
-build_broker:
-	@echo "Building broker binary..."
-	cd ./broker-service && env GOOS=linux CGO_ENABLED=0 go build -o ${BROKER_BINARY} ./cmd/api
-	@echo "Done!"
-
-## build_auth: builds the auth binary as a linux executable 
-build_auth:
-	@echo "Building auth binary..."
-	cd ./authentication-service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTH_BINARY} ./cmd/api
-	@echo "Done!"
-
 ## build_front: builds the frone end binary
 build_front:
 	@echo "Building front end binary..."
@@ -50,3 +38,11 @@ stop:
 	@echo "Stopping front end..."
 	@-pkill -SIGTERM -f "./${FRONT_END_BINARY}"
 	@echo "Stopped front end!"
+
+# attach delve debugger to authentication service
+debug.auth:
+	docker exec -d svc-auth /bin/sh /home/app/authentication-service/dlv.sh
+
+# attach delve debugger to broker service
+debug.broker:
+	docker exec -d svc-broker /bin/sh /home/app/broker-service/dlv.sh

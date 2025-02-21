@@ -2,6 +2,7 @@ version: "3.0"
 
 services:
   broker-service:
+    container_name: svc-broker 
     build:
       context: ./broker-service
       target: runner 
@@ -15,6 +16,7 @@ services:
       mode: replicated
       replicas: 1
   authentication-service:
+    container_name: svc-auth
     build:
       context: ./authentication-service
       target: runner 
