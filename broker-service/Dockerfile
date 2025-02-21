@@ -7,20 +7,18 @@ RUN apt-get update && apt-get install -y \
     musl-dev
 
 # build go module
-WORKDIR /home/app
+WORKDIR /home/app/broker-service
 
 COPY . .
-# RUN go mod download
-# RUN go build -o /brokerApp ./cmd/api
-# EXPOSE 8000
-# CMD ["/brokerApp"]
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux go build -gcflags="all=-N -l" -o /brokerApp ./cmd/api
 
 # run debugging with dlv
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
-RUN chmod +x dlv.sh
-EXPOSE 2345
-CMD [ "./dlv.sh" ]
+EXPOSE 80
+CMD ["dlv", "exec", "/brokerApp", "--headless", "--log", "--listen=:80", "--api-version=2"]
+
 
 FROM alpine:3.21 as runner 
-COPY --from=debugger /home/app/brokerApp .
+COPY --from=debugger /brokerApp .
 CMD ["./brokerApp"]

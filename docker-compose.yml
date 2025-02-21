@@ -6,11 +6,8 @@ services:
       context: ./broker-service
       target: debugger 
     restart: always
-    volumes:
-      - ./broker-service:/home/app
     ports:
-      - "8080:8000"
-      - "2001:2345"
+      - "8080:80"
     security_opt:
       - seccomp:unconfined
     deploy:
@@ -21,11 +18,8 @@ services:
       context: ./authentication-service
       target: debugger 
     restart: always
-    volumes:
-      - ./authentication-service:/home/app
     ports:
-      - "8081:8000"
-      - "2002:2345"
+      - "8081:80"
     security_opt:
       - seccomp:unconfined
     deploy:
