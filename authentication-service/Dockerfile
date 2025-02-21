@@ -1,24 +1,20 @@
-FROM golang:1.24-bullseye as debugger 
+FROM golang:1.24-alpine as builder 
 
 # installing packages 
-
-RUN apt-get update && apt-get install -y \
-    gcc \
-    git \
-    musl-dev
+RUN apk update && apk add --no-cache git gcc musl-dev
 
 # build go module
-WORKDIR /home/app/authentication-service
+ARG APP_SRC=/home/app/authentication-service
+WORKDIR ${APP_SRC}
 
 COPY . .
 RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -gcflags="all=-N -l" -o /authApp ./cmd/api
-
-# run debugging with dlv
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
-EXPOSE 80 
-CMD ["dlv", "exec", "/authApp", "--headless", "--log", "--listen=:80", "--api-version=2"]
+RUN chmod +x dlv.sh
 
 FROM alpine:3.21 as runner 
-COPY --from=debugger /authApp .
-CMD ["./authApp"]
+COPY --from=builder /authApp .
+COPY --from=builder /go/bin/dlv /usr/local/bin/dlv
+COPY --from=builder ${APP_SRC} ${APP_SRC}
+CMD ["/authApp"]

@@ -4,10 +4,11 @@ services:
   broker-service:
     build:
       context: ./broker-service
-      target: debugger 
+      target: runner 
     restart: always
     ports:
       - "8080:80"
+      - "2001:2345"
     security_opt:
       - seccomp:unconfined
     deploy:
@@ -16,10 +17,11 @@ services:
   authentication-service:
     build:
       context: ./authentication-service
-      target: debugger 
+      target: runner 
     restart: always
     ports:
       - "8081:80"
+      - "2002:2345"
     security_opt:
       - seccomp:unconfined
     deploy:
