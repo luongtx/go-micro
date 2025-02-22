@@ -3,3 +3,4 @@ db-data
 .vscode
 *.sum
 __debug*
+frontApp

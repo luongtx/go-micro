@@ -23,26 +23,29 @@ down:
 	@echo "Done!"
 
 ## build_front: builds the frone end binary
-build_front:
+fe.build:
 	@echo "Building front end binary..."
 	cd ./front-end && env CGO_ENABLED=0 go build -o ${FRONT_END_BINARY} ./cmd/web
 	@echo "Done!"
 
 ## start: starts the front end
-start: build_front
+fe.start:
+	@if [ ! -f "./front-end/${FRONT_END_BINARY}" ]; then \
+        make build_front; \
+    fi
 	@echo "Starting front end"
 	cd ./front-end && ./${FRONT_END_BINARY} &
 
 ## stop: stop the front end
-stop:
+fe.stop:
 	@echo "Stopping front end..."
 	@-pkill -SIGTERM -f "./${FRONT_END_BINARY}"
 	@echo "Stopped front end!"
 
 # attach delve debugger to authentication service
 debug.auth:
-	docker exec -d svc-auth /bin/sh /home/app/authentication-service/dlv.sh
+	docker exec svc-auth /bin/sh /home/app/authentication-service/dlv.sh &
 
 # attach delve debugger to broker service
 debug.broker:
-	docker exec -d svc-broker /bin/sh /home/app/broker-service/dlv.sh
+	docker exec svc-broker /bin/sh /home/app/broker-service/dlv.sh &
