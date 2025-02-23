@@ -4,3 +4,5 @@ db-data
 *.sum
 __debug*
 frontApp
+TODO
+.DS_Store

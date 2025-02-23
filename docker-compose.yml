@@ -2,10 +2,10 @@ version: "3.0"
 
 services:
   broker-service:
-    container_name: svc-broker 
+    container_name: svc-broker
     build:
       context: ./broker-service
-      target: runner 
+      target: runner
     restart: always
     ports:
       - "8080:80"
@@ -19,7 +19,7 @@ services:
     container_name: svc-auth
     build:
       context: ./authentication-service
-      target: runner 
+      target: runner
     restart: always
     ports:
       - "8081:80"
@@ -31,6 +31,15 @@ services:
       replicas: 1
     environment:
       DSN: "host=postgres port=5432 user=postgres password=password dbname=users sslmode=disable connect_timeout=10"
+  logger-service:
+    container_name: svc-logger
+    build:
+      context: ./logger-service
+      target: runner
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
   postgres:
     image: "postgres:14.2"
     ports:
@@ -44,3 +53,13 @@ services:
       POSTGRES_DB: users
     volumes:
       - ./db-data/postgres/:/var/lib/postgresql/data/
+  mongo:
+    image: "mongo:4.2.16-bionic"
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: logs
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - ./db-data/mongo/:/data/db
