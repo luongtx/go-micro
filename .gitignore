@@ -6,3 +6,4 @@ __debug*
 frontApp
 TODO
 .DS_Store
+_*.sh
