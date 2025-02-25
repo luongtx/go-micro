@@ -6,7 +6,7 @@ services:
     build:
       context: ./broker-service
       target: runner
-    restart: always
+    restart: no
     ports:
       - "8080:80"
       - "2001:2345"
@@ -20,7 +20,7 @@ services:
     build:
       context: ./authentication-service
       target: runner
-    restart: always
+    restart: no
     ports:
       - "8081:80"
       - "2002:2345"
@@ -36,7 +36,7 @@ services:
     build:
       context: ./logger-service
       target: runner
-    restart: always
+    restart: no
     deploy:
       mode: replicated
       replicas: 1
