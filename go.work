@@ -1,7 +1,11 @@
 go 1.22.2
 
-use ./broker-service
-
 use ./front-end
 
+use ./broker-service
+
 use ./authentication-service
+
+use ./logger-service
+
+use ./mail-service
