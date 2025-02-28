@@ -43,13 +43,8 @@ fe.stop:
 	@-pkill -SIGTERM -f "./${FRONT_END_BINARY}"
 	@echo "Stopped front end!"
 
-# install & attach delve debugger to authentication service
-debug.auth:
-	docker exec -i svc-auth /bin/sh < ./authentication-service/delve.sh &
-
-# install & attach delve debugger to broker service
-debug.broker:
-	docker exec -i svc-broker /bin/sh < ./broker-service/delve.sh &
-
-debug.mail:
-	docker exec -i svc-mailer /bin/sh < ./mail-service/delve.sh &
+SERVICE ?=
+BINARY ?=
+debug:
+	docker cp ./delve.sh $(SERVICE):/tmp/delve.sh
+	docker exec $(SERVICE) /bin/sh /tmp/delve.sh $(BINARY) &
