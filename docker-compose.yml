@@ -45,7 +45,9 @@ services:
     build:
       context: ./mail-service
       target: runner
-    restart: always
+    restart: no
+    ports:
+      - "2003:2345" 
     deploy:
       mode: replicated
       replicas: 1

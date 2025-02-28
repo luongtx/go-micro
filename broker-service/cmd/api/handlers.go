@@ -11,6 +11,14 @@ type RequestPayload struct {
 	Action string      `json:"action"`
 	Auth   AuthPayload `json:"auth,omitempty"`
 	Log    LogPayload  `json:"log,omitempty"`
+	Mail   MailPayload `json:"mail,omitempty"`
+}
+
+type MailPayload struct {
+	From    string `json:"from"`
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+	Message string `json:"message"`
 }
 
 type LogPayload struct {
@@ -46,9 +54,43 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 		app.authenticate(w, requestPayload.Auth)
 	case "log":
 		app.writeLog(w, requestPayload.Log)
+	case "mail":
+		app.sendMail(w, requestPayload.Mail)
+    case "ping":
 	default:
 		app.errorJSON(w, errors.New("unknown action"))
 	}
+}
+
+func (app *Config) sendMail(w http.ResponseWriter, m MailPayload) {
+	// create some json we'll send to the mail microservice
+	jsonData, _ := json.MarshalIndent(m, "", "\t")
+
+	// call the service
+	request, err := http.NewRequest("POST", "http://svc-mailer/send", bytes.NewBuffer(jsonData))
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		app.errorJSON(w, err)
+        return
+	}
+
+	defer response.Body.Close()
+
+	// make sure we get back the correct status code
+	if response.StatusCode != http.StatusAccepted {
+        app.errorJSON(w, errors.New("error calling mail service"))
+        return
+    }
+
+    var payload jsonResponse
+    payload.Error = false
+    payload.Message = "Mail sent"
+    app.writeJSON(w, http.StatusAccepted, payload)
 }
 
 func (app *Config) writeLog(w http.ResponseWriter, l LogPayload) {

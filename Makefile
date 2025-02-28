@@ -30,8 +30,9 @@ fe.build:
 
 ## start: starts the front end
 fe.start:
+	make fe.stop
 	@if [ ! -f "./front-end/${FRONT_END_BINARY}" ]; then \
-        make build_front; \
+        make fe.build; \
     fi
 	@echo "Starting front end"
 	cd ./front-end && ./${FRONT_END_BINARY} &
@@ -49,3 +50,6 @@ debug.auth:
 # install & attach delve debugger to broker service
 debug.broker:
 	docker exec -i svc-broker /bin/sh < ./broker-service/delve.sh &
+
+debug.mail:
+	docker exec -i svc-mailer /bin/sh < ./mail-service/delve.sh &
