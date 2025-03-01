@@ -46,5 +46,5 @@ fe.stop:
 SERVICE ?=
 BINARY ?=
 debug:
-	docker cp ./delve.sh $(SERVICE):/tmp/delve.sh
-	docker exec $(SERVICE) /bin/sh /tmp/delve.sh $(BINARY) &
+	docker-compose cp ./delve.sh $(SERVICE):/tmp/delve.sh
+	docker-compose exec -it -d $(SERVICE) /bin/sh /tmp/delve.sh $(BINARY)
