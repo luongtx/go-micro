@@ -40,7 +40,7 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-  mailer-service:
+  mail-service:
     container_name: svc-mailer
     build:
       context: ./mail-service
