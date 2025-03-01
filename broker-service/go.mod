@@ -6,3 +6,5 @@ require (
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-chi/cors v1.2.0
 )
+
+require github.com/tsawler/toolbox v1.3.1 // indirect

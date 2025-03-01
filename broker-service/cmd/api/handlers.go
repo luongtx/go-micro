@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"github.com/tsawler/toolbox"
 )
 
 type RequestPayload struct {
@@ -31,21 +32,23 @@ type AuthPayload struct {
 	Password string `json:"password"`
 }
 
+var tools toolbox.Tools
+
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
-	payload := jsonResponse{
+	payload := toolbox.JSONResponse{
 		Error:   false,
 		Message: "Hit the broker",
 	}
 
-	_ = app.writeJSON(w, http.StatusOK, payload)
+	_ = tools.WriteJSON(w, http.StatusOK, payload)
 }
 
 func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	var requestPayload RequestPayload
 
-	err := app.readJSON(w, r, &requestPayload)
+	err := tools.ReadJSON(w, r, &requestPayload)
 	if err != nil {
-		app.errorJSON(w, err)
+		tools.ErrorJSON(w, err)
 		return
 	}
 
@@ -58,7 +61,7 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 		app.sendMail(w, requestPayload.Mail)
     case "ping":
 	default:
-		app.errorJSON(w, errors.New("unknown action"))
+		tools.ErrorJSON(w, errors.New("unknown action"))
 	}
 }
 
@@ -69,13 +72,13 @@ func (app *Config) sendMail(w http.ResponseWriter, m MailPayload) {
 	// call the service
 	request, err := http.NewRequest("POST", "http://svc-mailer/send", bytes.NewBuffer(jsonData))
 	if err != nil {
-		app.errorJSON(w, err)
+		tools.ErrorJSON(w, err)
 		return
 	}
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		app.errorJSON(w, err)
+		tools.ErrorJSON(w, err)
         return
 	}
 
@@ -83,14 +86,14 @@ func (app *Config) sendMail(w http.ResponseWriter, m MailPayload) {
 
 	// make sure we get back the correct status code
 	if response.StatusCode != http.StatusAccepted {
-        app.errorJSON(w, errors.New("error calling mail service"))
+        tools.ErrorJSON(w, errors.New("error calling mail service"))
         return
     }
 
-    var payload jsonResponse
+    var payload toolbox.JSONResponse
     payload.Error = false
     payload.Message = "Mail sent"
-    app.writeJSON(w, http.StatusAccepted, payload)
+    tools.WriteJSON(w, http.StatusAccepted, payload)
 }
 
 func (app *Config) writeLog(w http.ResponseWriter, l LogPayload) {
@@ -100,26 +103,26 @@ func (app *Config) writeLog(w http.ResponseWriter, l LogPayload) {
 	// call the service
 	request, err := http.NewRequest("POST", "http://svc-logger/log", bytes.NewBuffer(jsonData))
 	if err != nil {
-		app.errorJSON(w, err)
+		tools.ErrorJSON(w, err)
 		return
 	}
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		app.errorJSON(w, err)
+		tools.ErrorJSON(w, err)
 		return
 	}
 	defer response.Body.Close()
 	// make sure we get back the correct status code
 	if response.StatusCode != http.StatusAccepted {
-		app.errorJSON(w, errors.New("error calling logging service"))
+		tools.ErrorJSON(w, errors.New("error calling logging service"))
 		return
 	}
 
-	var payload jsonResponse
+	var payload toolbox.JSONResponse 
 	payload.Error = false
 	payload.Message = "Logged"
-	app.writeJSON(w, http.StatusAccepted, payload)
+	tools.WriteJSON(w, http.StatusAccepted, payload)
 }
 
 func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
@@ -129,46 +132,46 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 	// call the service
 	request, err := http.NewRequest("POST", "http://svc-auth/authenticate", bytes.NewBuffer(jsonData))
 	if err != nil {
-		app.errorJSON(w, err)
+		tools.ErrorJSON(w, err)
 		return
 	}
 
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		app.errorJSON(w, err)
+		tools.ErrorJSON(w, err)
 		return
 	}
 	defer response.Body.Close()
 
 	// make sure we get back the correct status code
 	if response.StatusCode == http.StatusUnauthorized {
-		app.errorJSON(w, errors.New("invalid credentials"))
+		tools.ErrorJSON(w, errors.New("invalid credentials"))
 		return
 	} else if response.StatusCode != http.StatusAccepted {
-		app.errorJSON(w, errors.New("error calling auth service"))
+		tools.ErrorJSON(w, errors.New("error calling auth service"))
 		return
 	}
 
 	// create a varabiel we'll read response.Body into
-	var jsonFromService jsonResponse
+	var jsonFromService toolbox.JSONResponse
 
 	// decode the json from the auth service
 	err = json.NewDecoder(response.Body).Decode(&jsonFromService)
 	if err != nil {
-		app.errorJSON(w, err)
+		tools.ErrorJSON(w, err)
 		return
 	}
 
 	if jsonFromService.Error {
-		app.errorJSON(w, err, http.StatusUnauthorized)
+		tools.ErrorJSON(w, err, http.StatusUnauthorized)
 		return
 	}
 
-	var payload jsonResponse
+	var payload toolbox.JSONResponse
 	payload.Error = false
 	payload.Message = "Authenticated!"
 	payload.Data = jsonFromService.Data
 
-	app.writeJSON(w, http.StatusAccepted, payload)
+	tools.WriteJSON(w, http.StatusAccepted, payload)
 }
