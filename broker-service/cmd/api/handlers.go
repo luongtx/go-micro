@@ -1,9 +1,12 @@
 package main
 
 import (
+	"broker/event"
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
 	"github.com/tsawler/toolbox"
 )
@@ -56,10 +59,10 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	case "auth":
 		app.authenticate(w, requestPayload.Auth)
 	case "log":
-		app.writeLog(w, requestPayload.Log)
+		app.logEvent(w, requestPayload.Log)
 	case "mail":
 		app.sendMail(w, requestPayload.Mail)
-    case "ping":
+	case "ping":
 	default:
 		tools.ErrorJSON(w, errors.New("unknown action"))
 	}
@@ -79,21 +82,21 @@ func (app *Config) sendMail(w http.ResponseWriter, m MailPayload) {
 	response, err := client.Do(request)
 	if err != nil {
 		tools.ErrorJSON(w, err)
-        return
+		return
 	}
 
 	defer response.Body.Close()
 
 	// make sure we get back the correct status code
 	if response.StatusCode != http.StatusAccepted {
-        tools.ErrorJSON(w, errors.New("error calling mail service"))
-        return
-    }
+		tools.ErrorJSON(w, errors.New("error calling mail service"))
+		return
+	}
 
-    var payload toolbox.JSONResponse
-    payload.Error = false
-    payload.Message = "Mail sent"
-    tools.WriteJSON(w, http.StatusAccepted, payload)
+	var payload toolbox.JSONResponse
+	payload.Error = false
+	payload.Message = "Mail sent"
+	tools.WriteJSON(w, http.StatusAccepted, payload)
 }
 
 func (app *Config) writeLog(w http.ResponseWriter, l LogPayload) {
@@ -119,7 +122,7 @@ func (app *Config) writeLog(w http.ResponseWriter, l LogPayload) {
 		return
 	}
 
-	var payload toolbox.JSONResponse 
+	var payload toolbox.JSONResponse
 	payload.Error = false
 	payload.Message = "Logged"
 	tools.WriteJSON(w, http.StatusAccepted, payload)
@@ -174,4 +177,57 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 	payload.Data = jsonFromService.Data
 
 	tools.WriteJSON(w, http.StatusAccepted, payload)
+}
+
+// logEvent logs an event using the logger-service. It makes the call by pushing the data to RabbitMQ.
+func (app *Config) logEvent(w http.ResponseWriter, l LogPayload) {
+	err := app.pushToQueue(l.Name, l.Data)
+	if err != nil {
+		tools.ErrorJSON(w, err)
+		return
+	}
+
+	var payload toolbox.JSONResponse
+	payload.Error = false
+	payload.Message = "logged via RabbitMQ"
+
+	tools.WriteJSON(w, http.StatusAccepted, payload)
+}
+
+// pushToQueue pushes a message into RabbitMQ
+func (app *Config) pushToQueue(name, msg string) error {
+	if err := app.ensureRabbitConnection(); err != nil {
+		return err
+	}
+	emitter, err := event.NewEventEmitter(app.Rabbit)
+	if err != nil {
+		return err
+	}
+
+	payload := LogPayload{
+		Name: name,
+		Data: msg,
+	}
+
+	j, _ := json.MarshalIndent(&payload, "", "\t")
+	err = emitter.Push(string(j), "log.INFO")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (app *Config) ensureRabbitConnection() error {
+	if !app.Rabbit.IsClosed() {
+		return nil
+	}
+
+	log.Println("Attempting to reconnect to RabbitMQ...")
+	newConn, err := connect()
+	if err != nil {
+		return fmt.Errorf("failed to reconnect to RabbitMQ: %w", err)
+	}
+	app.Rabbit = newConn
+	log.Println("Successfully reconnected to RabbitMQ")
+	return nil
 }
