@@ -37,6 +37,8 @@ services:
       context: ./logger-service
       target: runner
     restart: no
+    ports:
+      - "2005:2345"
     deploy:
       mode: replicated
       replicas: 1

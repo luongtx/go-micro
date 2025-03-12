@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/rpc"
+
 	"github.com/tsawler/toolbox"
 )
 
@@ -59,7 +61,7 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	case "auth":
 		app.authenticate(w, requestPayload.Auth)
 	case "log":
-		app.logEvent(w, requestPayload.Log)
+		app.logViaRPC(w, requestPayload.Log)
 	case "mail":
 		app.sendMail(w, requestPayload.Mail)
 	case "ping":
@@ -191,6 +193,37 @@ func (app *Config) logEvent(w http.ResponseWriter, l LogPayload) {
 	payload.Error = false
 	payload.Message = "logged via RabbitMQ"
 
+	tools.WriteJSON(w, http.StatusAccepted, payload)
+}
+
+type RPCPayload struct {
+	Name string
+	Data string
+}
+
+func (app *Config) logViaRPC(w http.ResponseWriter, l LogPayload) {
+	client, err := rpc.Dial("tcp", "svc-logger:5001")
+	if err != nil {
+		tools.ErrorJSON(w, err)
+		return
+	}
+	defer client.Close()
+
+	rpcPayload := RPCPayload{
+		Name: l.Name,
+		Data: l.Data,
+	}
+
+	var result string
+	err = client.Call("RPCServer.LogInfo", rpcPayload, &result)
+	if err != nil {
+		tools.ErrorJSON(w, err)
+		return
+	}
+
+	var payload toolbox.JSONResponse
+	payload.Error = false
+	payload.Message = result
 	tools.WriteJSON(w, http.StatusAccepted, payload)
 }
 
