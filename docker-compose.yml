@@ -62,6 +62,8 @@ services:
       MAIL_PASSWORD: ""
       FROM_NAME: "Luong Tran"
       FROM_ADDRESS: luong.tran@example.com
+    depends_on:
+      - mailhog
   listener-service:
     container_name: svc-listener
     build:
@@ -75,7 +77,8 @@ services:
       replicas: 1
     environment:
       AMQP_URL: amqp://guest:guest@rabbitmq:5672/
-    
+    depends_on:
+      - rabbitmq
   postgres:
     image: "postgres:14.2"
     ports:
